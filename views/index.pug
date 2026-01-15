@@ -1,0 +1,281 @@
+doctype html
+html
+    head
+        meta(charset="utf-8")
+        title Restrict map panning to an area
+        meta(
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        )
+        link(
+            href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css"
+            rel="stylesheet"
+        )
+        script(src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js")
+
+        style.
+            body { margin: 0; padding: 0; }
+            #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+    body
+        #map
+
+        script.
+            function getBboxCenter(geometry) {
+                let coords;
+
+                if (geometry.type === "Polygon") {
+                    coords = geometry.coordinates[0];               // outer ring
+                } else if (geometry.type === "MultiPolygon") {
+                    coords = geometry.coordinates[0][0];            // first polygon outer ring
+                } else if (geometry.type === "Point") {
+                    return geometry.coordinates;
+                } else {
+                    throw new Error("Unsupported geometry type: " + geometry.type);
+                }
+
+                let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+                for (const [lng, lat] of coords) {
+                    if (lng < minLng) minLng = lng;
+                    if (lat < minLat) minLat = lat;
+                    if (lng > maxLng) maxLng = lng;
+                    if (lat > maxLat) maxLat = lat;
+                }
+
+                return [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+            }
+
+
+            mapboxgl.accessToken = 'pk.eyJ1IjoidmlyZ2luaXdvb2xmIiwiYSI6ImNtazhvbW90ZzBzbW4zbG9uOGlmYWV3aXYifQ.r4_DOUVJQx_3UT-Ovpc9lw';
+
+            // Set bounds to San Francisco, California.
+            const bounds = [
+                [-105.27707102527657, 40.0030404925513], // Southwest coordinates
+                [-105.25725037599734, 40.015062824363255] // Northeast coordinates
+            ];
+
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/virginiwoolf/cmkag1i8q00e201svft695qx1',
+                center: [-105.26696020273963, 40.00821825269933],
+                zoom: 10,
+                pitch: 45,
+                bearing: -180,
+                maxBounds: bounds
+            });
+
+            const popup = new mapboxgl.Popup({offset:25}).setText("ENVD");
+
+            new mapboxgl.Marker({
+                color: "green",
+                scale: 0.6
+            })
+                .setLngLat([-105.26922599080906, 40.00695729212469])
+                .setPopup(popup)
+                .addTo(map);
+
+            map.on("load", ()=>{
+
+                // map.setFog({
+                //     'range': [-2, 20],
+                //     'horizon-blend': 1,
+                //     'color': '#242B4B',
+                //     'high-color': '#161B36',
+                //     'space-color': '#0B1026',
+                //     'star-intensity': 0.8
+                // });
+
+                map.addInteraction('building-hover-on', {
+                    type: 'mouseenter',
+                    target: {featuresetId: 'buildings', importId: 'basemap'},
+                    handler: (e) => {
+                        map.setFeatureState(e.feature, {highlight: true});
+                        map.getCanvas().style.cursor = 'pointer';
+                    }
+                });
+
+                map.addInteraction('building-click-on', {
+                    type: 'click',
+                    target: {featuresetId: 'buildings', importId: 'basemap'},
+                    handler: (e) => {
+                        const feature = e.feature;
+                        if (!feature?.geometry) return;
+
+                        //map.setFeatureState(feature, { select: true });
+
+                        const center = getBboxCenter(feature.geometry);
+
+                        enableClip()
+
+                        map.flyTo({
+                            center,
+                            zoom: 19,
+                            speed: 1.2,
+                            curve: 1.4,
+                            pitch: 35,
+                            bearing: -60,
+                            essential: true
+                        });
+
+                        return true;
+                    }
+                });
+
+                map.addInteraction('building-hover-off', {
+                    type: 'mouseleave',
+                    target: {featuresetId: 'buildings', importId: 'basemap'},
+                    handler: (e) => {
+                        map.setFeatureState(e.feature, {highlight: false});
+                        map.getCanvas().style.cursor = '';
+                    }
+                });
+
+                map.addSource("focus", {
+                    type: "geojson",
+                    data: "/campusPolygon.geojson"
+                });
+
+                map.addSource("eraser", {
+                    type: "geojson",
+                    data: "/envdEraser.geojson"
+                });
+
+                map.addSource("mask", {
+                    type: "geojson",
+                    data: "/universityMask.geojson",
+                });
+
+                map.addSource("circleGradient", {
+                    type: "geojson",
+                    data: "/circleGradient.geojson",
+                });
+
+                map.addSource("polygonGradient", {
+                    type: "geojson",
+                    data: "/polygonGradient.geojson"
+                })
+
+                map.addSource("ENVD", {
+                    type: "geojson",
+                    data: "/buildingWalls.geojson"
+                });
+
+                // ===== ENVD Area Erase =====
+                function disableClip() {
+                    if (map.getLayer("ENVD-Erase")) map.removeLayer("ENVD-Erase");
+                }
+
+                function enableClip() {
+                    if (map.getLayer("ENVD-Erase")) return;
+
+                    map.addLayer({
+                        id: "ENVD-Erase",
+                        type: "clip",
+                        source: "eraser",
+                        layout: {
+                            "clip-layer-types": ["symbol", "model"]
+                        }
+                    });
+
+                    map.addLayer({
+                        id: "building-extrusion",
+                        type: "fill-extrusion",
+                        source: "building",
+                        paint: {
+                            "fill-extrusion-height": ["get", "height"],
+                            "fill-extrusion-base": ["get", "base_height"],
+                            "fill-extrusion-color": ["get", "color"],
+                            "fill-extrusion-opacity": 0.9
+                        }
+                    });
+                }
+
+
+                // ===== Polygon Area =====
+                map.addLayer({
+                    id: "polygonGradient-fill",
+                    type: "fill",
+                    source: "polygonGradient",
+                    slot: "bottom",
+                    paint: {
+                        "fill-color": "#DED8A0",
+                        "fill-opacity": .4,
+                    }
+                });
+
+                map.addLayer({
+                    id: "polygonLine-fill",
+                    type: "line",
+                    source: "polygonGradient",
+                    slot: "middle",
+                    paint: {
+                        "line-color": "#DED8A0",
+                        "line-width": 20,   // tweak
+                        "line-blur": 15,     // tweak
+                        "line-opacity": 1
+                    }
+                });
+
+                // ===== Circle Area =====
+
+                map.addLayer({
+                    id: "circle-gradient",
+                    type: "fill",
+                    source: "circleGradient",
+                    slot: "bottom",
+                    paint: {
+                        "fill-color": "#D4A7D4",
+                        "fill-opacity": .7,
+                        "fill-outline-color": "#000000",
+                    }
+                });
+
+                map.addLayer({
+                    id: "circleLine-gradient",
+                    type: "line",
+                    source: "circleGradient",
+                    slot: "middle",
+                    paint: {
+                        "line-color": "#D4A7D4",
+                        "line-width": 80,   // tweak
+                        "line-blur": 40,     // tweak
+                        "line-opacity": 1
+                    }
+                });
+
+                // ===== Global White Map =====
+
+                map.addLayer({
+                    id: "mask-feather",
+                    type: "line",
+                    source: "focus",
+                    slot: "top",
+                    paint: {
+                        "line-color": "#F4F4F4",
+                        "line-width": 80,   // tweak
+                        "line-blur": 40,     // tweak
+                        "line-opacity": 1
+                    }
+                });
+
+                map.addLayer({
+                    id: "region-mask",
+                    type: "fill",
+                    source: "mask",
+                    slot: "top",
+                    paint: {
+                        "fill-color": "#F4F4F4",
+                        "fill-opacity": 1,
+
+                        "fill-gradient": [
+                            "interpolate",
+                            ["linear"],
+                            ["distance-from-edge"],
+                            0, "rgba(255,255,255,0)",
+                            200, "rgba(255,255,255,1)"
+                        ],
+                    }
+                });
+
+                console.log('imports:', map.getStyle().imports);
+            });
