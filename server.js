@@ -9,7 +9,7 @@ app.set('views', __dirname + '/views');
 
 app.get('/', (req, res)=>{
     console.log('get /')
-    app.render('index')
+    res.render('index')
 })
 
 app.listen(3001)
