@@ -1,15 +1,23 @@
 const express = require('express');
 const app = express()
+const MAPBOX_KEY = process.env.MAPBOX_KEY;
 
 app.use(express.static('public'))
+
+require('dotenv').config();
 
 app.set('view engine', 'pug');
 app.set('views', __dirname + '/views');
 
-
 app.get('/', (req, res)=>{
     console.log('get /')
-    res.render('index')
+    res.render("index", {
+        MAPBOX_KEY: process.env.MAPBOX_KEY
+    });
 })
 
-app.listen(3001)
+app.get("/building", (req, res) => {
+    res.render("building");
+});
+
+app.listen(process.env.PORT)
