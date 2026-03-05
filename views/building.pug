@@ -15,6 +15,7 @@ html
             html, body {margin: 0;width: 100%;height: 100%;}
             #app {
                 width: 100%; height: 100%;
+                position: relative;
                 background: radial-gradient(
                         circle at center,
                         #ffffff 0%,
@@ -22,7 +23,54 @@ html
                         #f2f2f2 70%,
                         #e6e6e6 100%);}
             canvas {display: block;}
+
+            .level-selector{
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                z-index: 20;
+                user-select: none;
+            }
+
+            .level-btn{
+                width: 60px;
+                height: 50px;
+                border: 1px solid rgba(0,0,0,.15);
+                border-radius: 10px;
+                background: rgba(255,255,255,.92);
+                box-shadow: 0 4px 12px rgba(0,0,0,.10);
+                display: grid;
+                place-items: center;
+                font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+                color: rgba(0,0,0,.75);
+                cursor: pointer;
+                transition: transform .08s ease, background .12s ease, box-shadow .12s ease;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .level-btn:hover{
+                background: rgba(255,255,255,.98);
+                box-shadow: 0 6px 16px rgba(0,0,0,.14);
+            }
+
+            .level-btn:active{
+                transform: scale(0.98);
+            }
+
+
     body
         #app
             canvas(class="webgl")
+
+            .level-selector#levelSelector
+                button.level-btn(type="button" data-level="3" aria-label="Level 3") L3
+                button.level-btn(type="button" data-level="2" aria-label="Level 2") L2
+                button.level-btn(type="button" data-level="1" aria-label="Level 1") L1
+
             script(type="module" src="/js/cube.js")
