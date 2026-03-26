@@ -44,3 +44,4 @@ bus.subscribe("BuildingClickedEvent", async ({ center }) => {
     await waitFor(overlay, "transitionend", "opacity");
     navigateTo("/building")
 });
+

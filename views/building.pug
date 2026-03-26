@@ -18,10 +18,10 @@ html
                 position: relative;
                 background: radial-gradient(
                         circle at center,
-                        #ffffff 0%,
-                        #ffffff 40%,
-                        #f2f2f2 70%,
-                        #e6e6e6 100%);}
+                        #D0D3D6 0%,
+                        #D0D3D6 40%,
+                        #B4B6BF 70%,
+                        #A2A4B0 100%);}
             canvas {display: block;}
 
             .level-selector{
@@ -63,6 +63,85 @@ html
                 transform: scale(0.98);
             }
 
+            .time-slider-wrap {
+                position: absolute;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 20;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                user-select: none;
+                font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            }
+
+            .time-labels {
+                display: flex;
+                justify-content: space-between;
+                width: 100%;
+                padding: 0 2px;
+                margin-bottom: 6px;
+            }
+
+            .time-labels span {
+                font-size: 10px;
+                font-weight: 600;
+                color: rgba(0, 0, 0, .5);
+                width: 0;
+                text-align: center;
+                overflow: visible;
+                white-space: nowrap;
+            }
+
+            .time-slider {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 360px;
+                height: 6px;
+                border-radius: 3px;
+                background: rgba(255, 255, 255, .85);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+                outline: none;
+                cursor: pointer;
+            }
+
+            .time-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #fff;
+                border: 2px solid rgba(0, 0, 0, .2);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+                transition: transform .1s ease;
+            }
+
+            .time-slider::-webkit-slider-thumb:hover {
+                transform: scale(1.15);
+            }
+
+            .time-slider::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #fff;
+                border: 2px solid rgba(0, 0, 0, .2);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+            }
+
+            .time-readout {
+                margin-top: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                color: rgba(0, 0, 0, .75);
+                background: rgba(255, 255, 255, .92);
+                padding: 4px 12px;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+            }
+
 
     body
         #app
@@ -73,4 +152,36 @@ html
                 button.level-btn(type="button" data-level="2" aria-label="Level 2") L2
                 button.level-btn(type="button" data-level="1" aria-label="Level 1") L1
 
-            script(type="module" src="/js/cube.js")
+            .time-slider-wrap#timeSlider
+                .time-labels
+                    span 6a
+                    span 7
+                    span 8
+                    span 9
+                    span 10
+                    span 11
+                    span 12p
+                    span 1
+                    span 2
+                    span 3
+                    span 4
+                    span 5
+                    span 6p
+                input.time-slider(type="range" min="6" max="18" step="1" value="12" aria-label="Time of day")
+                .time-readout#timeReadout 12:00 PM
+
+            script.
+                (function(){
+                    const slider = document.querySelector('.time-slider');
+                    const readout = document.getElementById('timeReadout');
+                    slider.addEventListener('input', function(){
+                        const h = parseInt(this.value);
+                        const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+                        const suffix = h >= 12 ? 'PM' : 'AM';
+                        readout.textContent = hour12 + ':00 ' + suffix;
+
+                        window.dispatchEvent(new CustomEvent('time-change', { detail: { hour: h } }));
+                    });
+                })();
+
+            script(type="module" src="/js/buildingScene.js")
