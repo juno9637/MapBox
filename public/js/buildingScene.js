@@ -520,7 +520,7 @@ function createTextTexture(text, width = 512, height = 256) {
 }
 
 const bubbleTextTexture = createTextTexture(
-    'Atlas Building'
+    'ATLAS'
 );
 
 const vaporBubbleMaterial = new THREE.ShaderMaterial({
@@ -531,7 +531,7 @@ const vaporBubbleMaterial = new THREE.ShaderMaterial({
         uTime: { value: 0 },
         uTextMap: { value: bubbleTextTexture },
         uPerlinTexture: { value: perlinTexture },
-        uColor: { value: new THREE.Color('#ffffff') },
+        uColor: { value: new THREE.Color('#EFEDF0') },
     },
     vertexShader: `
         varying vec2 vUv;
@@ -592,6 +592,45 @@ const vaporBubbleMesh = new THREE.Mesh(vaporBubbleGeo, vaporBubbleMaterial);
 vaporBubbleMesh.position.set(0, 2.2, 0);
 
 scene.add(vaporBubbleMesh);
+
+// ---------------------
+// Camera Intro — GSAP
+// ---------------------
+const introStart = { x: -12, y: 5, z: 12 };
+const introEnd   = { x: -4, y: 1.5, z: 4 };
+
+const lookTarget = new THREE.Vector3(0, 3, 0);
+
+camera.position.set(introStart.x, introStart.y, introStart.z);
+camera.lookAt(lookTarget);
+controls.enabled = false;
+
+const tl = gsap.timeline({
+    onUpdate: () => {
+        camera.lookAt(lookTarget);
+    },
+    onComplete: () => {
+        controls.enabled = true;
+        controls.target.set(0, 0, 0);
+        controls.update();
+    }
+});
+
+// Camera swoops in
+tl.to(camera.position, {
+    x: introEnd.x,
+    y: introEnd.y,
+    z: introEnd.z,
+    duration: 2.5,
+    ease: 'power3.out',
+}, 0);
+
+// LookAt drifts down simultaneously
+tl.to(lookTarget, {
+    y: 0,
+    duration: 2.5,
+    ease: 'power2.out',
+}, 0);
 
 // ---------------------------------
 // Animation loop
