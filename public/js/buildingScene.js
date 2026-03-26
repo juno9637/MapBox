@@ -475,15 +475,123 @@ scene.add(circleMesh)
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.enableDamping = true;
 
-//-----------------
-//GUI
-//-----------------
+// ---------------------
+// Vapor Bubble — ShaderMaterial
+// ---------------------
+function createTextTexture(text, width = 512, height = 256) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
 
-const AtlasTweaks = gui.addFolder('Atlas Material').close()
+    ctx.clearRect(0, 0, width, height);
 
-AtlasTweaks.addColor(debugObject, "DiscColor").onChange(() => {
-    circleMaterial.color.set(debugObject.DiscColor);
+    ctx.font = '600 22px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Word wrap
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    const maxWidth = width * 0.65;
+
+    words.forEach(word => {
+        const test = currentLine + word + ' ';
+        if (ctx.measureText(test).width > maxWidth && currentLine) {
+            lines.push(currentLine.trim());
+            currentLine = word + ' ';
+        } else {
+            currentLine = test;
+        }
+    });
+    lines.push(currentLine.trim());
+
+    const lineHeight = 28;
+    const startY = height / 2 - (lines.length - 1) * lineHeight / 2;
+
+    lines.forEach((line, i) => {
+        ctx.fillText(line, width / 2, startY + i * lineHeight);
+    });
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+}
+
+const bubbleTextTexture = createTextTexture(
+    'Atlas Building'
+);
+
+const vaporBubbleMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    uniforms: {
+        uTime: { value: 0 },
+        uTextMap: { value: bubbleTextTexture },
+        uPerlinTexture: { value: perlinTexture },
+        uColor: { value: new THREE.Color('#ffffff') },
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vWorldPos;
+
+        void main() {
+            vUv = uv;
+            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+            vWorldPos = worldPosition.xyz;
+            gl_Position = projectionMatrix * viewMatrix * worldPosition;
+        }
+    `,
+    fragmentShader: `
+        uniform float uTime;
+        uniform sampler2D uTextMap;
+        uniform sampler2D uPerlinTexture;
+        uniform vec3 uColor;
+
+        varying vec2 vUv;
+        varying vec3 vWorldPos;
+
+        void main() {
+            vec2 centered = vUv - 0.5;
+
+            // Animated vapor distortion
+            float noiseA = texture2D(uPerlinTexture, vUv * 0.8 + uTime * 0.02).r;
+            float noiseB = texture2D(uPerlinTexture, vUv * 1.2 - uTime * 0.015).r;
+            float noise  = (noiseA + noiseB) * 0.5;
+
+            // Organic blobby edge
+            float dist = length(centered * vec2(1.8, 2.2));
+            float wobble = noise * 0.12;
+            float edge = smoothstep(0.5 + wobble, 0.35 + wobble, dist);
+
+            // Inner glow layers
+            float innerGlow = smoothstep(0.5, 0.0, dist) * 0.3;
+            float coreGlow  = smoothstep(0.25, 0.0, dist) * 0.2;
+
+            // Base vapor color with luminous center
+            vec3 color = uColor + coreGlow;
+
+            // Text layer (only in the center region)
+            float textMask = smoothstep(0.4, 0.25, dist);
+            vec4 textSample = texture2D(uTextMap, vUv);
+            color = mix(color, textSample.rgb, textSample.a * textMask);
+
+            // Breathing alpha
+            float breath = 0.9 + 0.1 * sin(uTime * 0.8);
+            float alpha = edge;
+
+            gl_FragColor = vec4(color, alpha);
+        }
+    `
 });
+
+const vaporBubbleGeo = new THREE.PlaneGeometry(1.6, 0.9, 1, 1);
+const vaporBubbleMesh = new THREE.Mesh(vaporBubbleGeo, vaporBubbleMaterial);
+vaporBubbleMesh.position.set(0, 2.2, 0);
+
+scene.add(vaporBubbleMesh);
 
 // ---------------------------------
 // Animation loop
@@ -496,11 +604,12 @@ function animate() {
 
     customUniforms.uTime.value = elapsedTime
     waveCustomUniforms.uTime.value = elapsedTime
+    vaporBubbleMaterial.uniforms.uTime.value = elapsedTime;
 
     requestAnimationFrame(animate);
     controls.update();
 
-
+    vaporBubbleMesh.quaternion.copy(camera.quaternion);
 
     renderer.render( scene, camera );
 } animate()

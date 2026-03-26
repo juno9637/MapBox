@@ -35,7 +35,6 @@ html
                 z-index: 20;
                 user-select: none;
             }
-
             .level-btn{
                 width: 60px;
                 height: 50px;
@@ -53,12 +52,10 @@ html
                 transition: transform .08s ease, background .12s ease, box-shadow .12s ease;
                 -webkit-tap-highlight-color: transparent;
             }
-
             .level-btn:hover{
                 background: rgba(255,255,255,.98);
                 box-shadow: 0 6px 16px rgba(0,0,0,.14);
             }
-
             .level-btn:active{
                 transform: scale(0.98);
             }
@@ -75,7 +72,6 @@ html
                 user-select: none;
                 font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
             }
-
             .time-labels {
                 display: flex;
                 justify-content: space-between;
@@ -83,7 +79,6 @@ html
                 padding: 0 2px;
                 margin-bottom: 6px;
             }
-
             .time-labels span {
                 font-size: 10px;
                 font-weight: 600;
@@ -93,7 +88,6 @@ html
                 overflow: visible;
                 white-space: nowrap;
             }
-
             .time-slider {
                 -webkit-appearance: none;
                 appearance: none;
@@ -105,7 +99,6 @@ html
                 outline: none;
                 cursor: pointer;
             }
-
             .time-slider::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 appearance: none;
@@ -117,11 +110,9 @@ html
                 box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
                 transition: transform .1s ease;
             }
-
             .time-slider::-webkit-slider-thumb:hover {
                 transform: scale(1.15);
             }
-
             .time-slider::-moz-range-thumb {
                 width: 18px;
                 height: 18px;
@@ -130,7 +121,6 @@ html
                 border: 2px solid rgba(0, 0, 0, .2);
                 box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
             }
-
             .time-readout {
                 margin-top: 8px;
                 font-size: 13px;
@@ -141,7 +131,6 @@ html
                 border-radius: 8px;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
             }
-
 
     body
         #app
@@ -169,6 +158,7 @@ html
                     span 6p
                 input.time-slider(type="range" min="6" max="18" step="1" value="12" aria-label="Time of day")
                 .time-readout#timeReadout 12:00 PM
+
 
             script.
                 (function(){
