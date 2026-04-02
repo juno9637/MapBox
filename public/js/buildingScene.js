@@ -6,6 +6,8 @@ import { cameraTransparencyVertexShader } from '../shaders/cameraTransparency/ve
 import { cameraTransparencyFragmentShader } from '../shaders/cameraTransparency/fragment.js';
 import { wavesVertexShader } from '../shaders/waves/vertex.js';
 import { wavesFragmentShader } from '../shaders/waves/fragment.js';
+import { smellVertexShader } from '../shaders/smell/vertex.js';
+import { smellFragmentShader } from '../shaders/smell/fragment.js';
 
 //Loaders
 const textureLoader = new THREE.TextureLoader();
@@ -64,6 +66,41 @@ renderer.setClearColor(0xffffff, 0);
  */
 
 //-----------------
+// Smell Material
+//-----------------
+const swirlGeometry = new THREE.PlaneGeometry(1, 1, 256, 256)
+swirlGeometry.rotateX(-Math.PI * 0.5)
+swirlGeometry.rotateY(-Math.PI * 0.2)
+swirlGeometry.scale(1, 1, 1)
+
+const swirlTexture = textureLoader.load('../textures/swirl.png')
+
+const perlinTexture = textureLoader.load('../textures/perlin.png')
+perlinTexture.wrapS = THREE.RepeatWrapping
+perlinTexture.wrapT = THREE.RepeatWrapping
+
+//Material
+const swirlMaterial = new THREE.ShaderMaterial({
+    vertexShader: smellVertexShader,
+    fragmentShader: smellFragmentShader,
+    uniforms: {
+        uTime: new THREE.Uniform(0),
+        uSwirlTexture: new THREE.Uniform(swirlTexture),
+        uPerlinTexture: new THREE.Uniform(perlinTexture),
+        uDepthColor: {value: new THREE.Color('#C6BAE6')},
+        uSurfaceColor: {value: new THREE.Color('#9F92C8')}, //D2ADFF AE94EB
+    },
+    side: THREE.DoubleSide,
+    transparent: true,
+})
+
+const swirl = new THREE.Mesh(swirlGeometry, swirlMaterial)
+swirl.position.y = -0.1
+swirl.position.x = -1.2
+swirl.position.z = -0.2
+scene.add(swirl)
+
+//-----------------
 // White MatCap
 //-----------------
 const matCapTexture = textureLoader.load('../textures/Matcap.png')
@@ -82,9 +119,6 @@ blueMatCapMaterial.matcap = blueMatCapTexture;
 //-----------------
 // Transparency White Matcap
 //-----------------
-const perlinTexture = textureLoader.load('../textures/perlin.png')
-perlinTexture.wrapS = THREE.RepeatWrapping
-perlinTexture.wrapT = THREE.RepeatWrapping
 
 const atlasMatCapMaterial = new THREE.MeshMatcapMaterial({
     transparent: true,
@@ -162,8 +196,8 @@ atlasMatCapMaterial.onBeforeCompile = (shader) => {
             float centerDist = length(circleDelta);
         
             //Wavey
-            float wavesY = texture(uPerlinTexture, vec2(0.5, vUv.y * 0.2 - uTime * 0.1)).r;
-            float wavesX = texture(uPerlinTexture, vec2(0.5, vUv.x * 0.2 - uTime * 0.1)).r;
+            float wavesY = texture(uPerlinTexture, vec2(0.5, vUv.y * 0.2 - uTime * 0.05)).r;
+            float wavesX = texture(uPerlinTexture, vec2(0.5, vUv.x * 0.2 - uTime * 0.04)).r;
             float waves = wavesY * wavesX;
             
             float wavePos = centerDist + waves * 0.6;
@@ -195,7 +229,7 @@ const waveCustomUniforms = {
     uTime: new THREE.Uniform(0),
     uBigWavesElevation: new THREE.Uniform(0.12),
     uBigWavesFrequency: new THREE.Uniform(10),
-    uBigWaveSpeed: new THREE.Uniform(1.38),
+    uBigWaveSpeed: new THREE.Uniform(3),
     uWaveCenter: new THREE.Uniform(new THREE.Vector2(0, 0)),
     uPlaneRadius: new THREE.Uniform(.5),
 };
@@ -475,162 +509,44 @@ scene.add(circleMesh)
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.enableDamping = true;
 
-// ---------------------
-// Vapor Bubble — ShaderMaterial
-// ---------------------
-function createTextTexture(text, width = 512, height = 256) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-
-    ctx.clearRect(0, 0, width, height);
-
-    ctx.font = '600 22px system-ui, -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Word wrap
-    const words = text.split(' ');
-    const lines = [];
-    let currentLine = '';
-    const maxWidth = width * 0.65;
-
-    words.forEach(word => {
-        const test = currentLine + word + ' ';
-        if (ctx.measureText(test).width > maxWidth && currentLine) {
-            lines.push(currentLine.trim());
-            currentLine = word + ' ';
-        } else {
-            currentLine = test;
-        }
-    });
-    lines.push(currentLine.trim());
-
-    const lineHeight = 28;
-    const startY = height / 2 - (lines.length - 1) * lineHeight / 2;
-
-    lines.forEach((line, i) => {
-        ctx.fillText(line, width / 2, startY + i * lineHeight);
-    });
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-}
-
-const bubbleTextTexture = createTextTexture(
-    'ATLAS'
-);
-
-const vaporBubbleMaterial = new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    uniforms: {
-        uTime: { value: 0 },
-        uTextMap: { value: bubbleTextTexture },
-        uPerlinTexture: { value: perlinTexture },
-        uColor: { value: new THREE.Color('#EFEDF0') },
-    },
-    vertexShader: `
-        varying vec2 vUv;
-        varying vec3 vWorldPos;
-
-        void main() {
-            vUv = uv;
-            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-            vWorldPos = worldPosition.xyz;
-            gl_Position = projectionMatrix * viewMatrix * worldPosition;
-        }
-    `,
-    fragmentShader: `
-        uniform float uTime;
-        uniform sampler2D uTextMap;
-        uniform sampler2D uPerlinTexture;
-        uniform vec3 uColor;
-
-        varying vec2 vUv;
-        varying vec3 vWorldPos;
-
-        void main() {
-            vec2 centered = vUv - 0.5;
-
-            // Animated vapor distortion
-            float noiseA = texture2D(uPerlinTexture, vUv * 0.8 + uTime * 0.02).r;
-            float noiseB = texture2D(uPerlinTexture, vUv * 1.2 - uTime * 0.015).r;
-            float noise  = (noiseA + noiseB) * 0.5;
-
-            // Organic blobby edge
-            float dist = length(centered * vec2(1.8, 2.2));
-            float wobble = noise * 0.12;
-            float edge = smoothstep(0.5 + wobble, 0.35 + wobble, dist);
-
-            // Inner glow layers
-            float innerGlow = smoothstep(0.5, 0.0, dist) * 0.3;
-            float coreGlow  = smoothstep(0.25, 0.0, dist) * 0.2;
-
-            // Base vapor color with luminous center
-            vec3 color = uColor + coreGlow;
-
-            // Text layer (only in the center region)
-            float textMask = smoothstep(0.4, 0.25, dist);
-            vec4 textSample = texture2D(uTextMap, vUv);
-            color = mix(color, textSample.rgb, textSample.a * textMask);
-
-            // Breathing alpha
-            float breath = 0.9 + 0.1 * sin(uTime * 0.8);
-            float alpha = edge;
-
-            gl_FragColor = vec4(color, alpha);
-        }
-    `
-});
-
-const vaporBubbleGeo = new THREE.PlaneGeometry(1.6, 0.9, 1, 1);
-const vaporBubbleMesh = new THREE.Mesh(vaporBubbleGeo, vaporBubbleMaterial);
-vaporBubbleMesh.position.set(0, 2.2, 0);
-
-scene.add(vaporBubbleMesh);
-
-// ---------------------
-// Camera Intro — GSAP
-// ---------------------
-const introStart = { x: -12, y: 5, z: 12 };
-const introEnd   = { x: -4, y: 1.5, z: 4 };
-
-const lookTarget = new THREE.Vector3(0, 3, 0);
-
-camera.position.set(introStart.x, introStart.y, introStart.z);
-camera.lookAt(lookTarget);
-controls.enabled = false;
-
-const tl = gsap.timeline({
-    onUpdate: () => {
-        camera.lookAt(lookTarget);
-    },
-    onComplete: () => {
-        controls.enabled = true;
-        controls.target.set(0, 0, 0);
-        controls.update();
-    }
-});
-
-// Camera swoops in
-tl.to(camera.position, {
-    x: introEnd.x,
-    y: introEnd.y,
-    z: introEnd.z,
-    duration: 2.5,
-    ease: 'power3.out',
-}, 0);
-
-// LookAt drifts down simultaneously
-tl.to(lookTarget, {
-    y: 0,
-    duration: 2.5,
-    ease: 'power2.out',
-}, 0);
+// // ---------------------
+// // Camera Intro — GSAP
+// // ---------------------
+// const introStart = { x: -12, y: 5, z: 12 };
+// const introEnd   = { x: -4, y: 1.5, z: 4 };
+//
+// const lookTarget = new THREE.Vector3(0, 3, 0);
+//
+// camera.position.set(introStart.x, introStart.y, introStart.z);
+// camera.lookAt(lookTarget);
+// controls.enabled = false;
+//
+// const tl = gsap.timeline({
+//     onUpdate: () => {
+//         camera.lookAt(lookTarget);
+//     },
+//     onComplete: () => {
+//         controls.enabled = true;
+//         controls.target.set(0, 0, 0);
+//         controls.update();
+//     }
+// });
+//
+// // Camera swoops in
+// tl.to(camera.position, {
+//     x: introEnd.x,
+//     y: introEnd.y,
+//     z: introEnd.z,
+//     duration: 2.5,
+//     ease: 'power3.out',
+// }, 0);
+//
+// // LookAt drifts down simultaneously
+// tl.to(lookTarget, {
+//     y: 0,
+//     duration: 2.5,
+//     ease: 'power2.out',
+// }, 0);
 
 // ---------------------------------
 // Animation loop
@@ -643,12 +559,10 @@ function animate() {
 
     customUniforms.uTime.value = elapsedTime
     waveCustomUniforms.uTime.value = elapsedTime
-    vaporBubbleMaterial.uniforms.uTime.value = elapsedTime;
+    swirlMaterial.uniforms.uTime.value = elapsedTime;
 
     requestAnimationFrame(animate);
     controls.update();
-
-    vaporBubbleMesh.quaternion.copy(camera.quaternion);
 
     renderer.render( scene, camera );
 } animate()
