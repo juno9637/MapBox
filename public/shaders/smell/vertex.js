@@ -32,13 +32,13 @@ export const smellVertexShader = /* glsl */ `
         newPosition.y = height * heightFalloff;
     
         //Crest Sway
-        float swayStrength = 3.0;
+        float swayStrength = 0.4;
         vec2 sway = vec2(
         sin(uTime * 1.2 + position.x * 2.0),
         cos(uTime * 0.9 + position.z * 2.0)
         );
         //Height Squared for more sway at the top
-        newPosition.xz += sway * swayStrength * height * height;
+        newPosition.xz += sway * swayStrength * height;
     
         gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
     

@@ -18,16 +18,151 @@ html
 
         link( href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet")
         link(rel="stylesheet", href="https://unpkg.com/threebox-plugin/dist/threebox.css")
+        link(rel="stylesheet", href="/css/timebar.css")
         link(rel="stylesheet", href="/css/style.css")
+        link(rel="stylesheet", href="/css/sidebar.css")
 
     body
         #map
         #fadeOverlay
+
+        include timebar.pug
+
+        .search(data-state="closed")
+            button.search__button(type="button" aria-label="Open search" aria-expanded="false")
+                svg.search__icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                    circle(cx="11" cy="11" r="7")
+                    line(x1="20" y1="20" x2="16.2" y2="16.2")
+            .search__bar(role="search")
+                svg.search__bar-icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                    circle(cx="11" cy="11" r="7")
+                    line(x1="20" y1="20" x2="16.2" y2="16.2")
+                input.search__input(type="text" placeholder="Search here..." aria-label="Search")
+                button.search__close(type="button" aria-label="Close search")
+                    svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                        line(x1="6" y1="6" x2="18" y2="18")
+                        line(x1="18" y1="6" x2="6" y2="18")
+            .search__results(role="listbox" aria-label="Search results" hidden)
+                //- Results are populated by sidebar.js / search.js based on input
+
+        //- Legend (sits to the left of the sidebar, moves with it)
+        aside#legend.legend(aria-label="Map legend")
+            .legend__title
+                | Intensity of
+                br
+                | Sensory Input
+            .legend__scale
+                .legend__bar(aria-hidden="true")
+                .legend__labels
+                    span.legend__label.legend__label--top Intense
+                    .legend__ticks(aria-hidden="true")
+                        span.legend__tick
+                        span.legend__tick
+                        span.legend__tick
+                        span.legend__tick
+                        span.legend__tick
+                        span.legend__tick
+                    span.legend__label.legend__label--bottom Mild
+
+        //- Right side sidebar
+        aside#sidebar.sidebar(aria-label="Information panel" data-state="docked")
+            button#sidebar-toggle.sidebar__toggle(type="button" aria-label="Toggle sidebar" aria-expanded="false")
+                svg.sidebar__toggle-icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                    rect(x="3" y="4" width="18" height="16" rx="2.5")
+                    line(x1="9" y1="4" x2="9" y2="20")
+                    polyline(points="16 9 13 12 16 15")
+            .sidebar__content
+                h2.sidebar__title Data Information
+
+                //- Data filter (checkbox group)
+                section.data-panel(aria-labelledby="data-panel-heading")
+                    h3#data-panel-heading.data-panel__heading Data
+                    ul.data-panel__list(role="list")
+                        li.data-panel__item
+                            label.data-checkbox
+                                input(type="checkbox" name="sense" value="hearing")
+                                span.data-checkbox__box(aria-hidden="true")
+                                    svg.data-checkbox__check(viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                        polyline(points="3 8 7 12 13 4")
+                                span.data-checkbox__label Hearing
+                        li.data-panel__item
+                            label.data-checkbox
+                                input(type="checkbox" name="sense" value="sight")
+                                span.data-checkbox__box(aria-hidden="true")
+                                    svg.data-checkbox__check(viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                        polyline(points="3 8 7 12 13 4")
+                                span.data-checkbox__label Sight
+                        li.data-panel__item
+                            label.data-checkbox
+                                input(type="checkbox" name="sense" value="smell")
+                                span.data-checkbox__box(aria-hidden="true")
+                                    svg.data-checkbox__check(viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                        polyline(points="3 8 7 12 13 4")
+                                span.data-checkbox__label Smell
+                        li.data-panel__item
+                            label.data-checkbox
+                                input(type="checkbox" name="sense" value="touch")
+                                span.data-checkbox__box(aria-hidden="true")
+                                    svg.data-checkbox__check(viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                        polyline(points="3 8 7 12 13 4")
+                                span.data-checkbox__label Touch
+
+                //- Sense activity chart
+                figure.sense-chart(aria-label="Sense activity over time")
+                    span.sense-chart__axis-label.sense-chart__axis-label--top Positive
+                    .sense-chart__plot
+                        svg.sense-chart__svg(viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true")
+                            //- Positive area: hearing (deeper royal blue, BACK layer — bigger peaks)
+                            path.sense-chart__area.sense-chart__area--hearing(d="M 0 95 L 12 78 L 28 92 L 44 70 L 60 88 L 78 60 L 96 82 L 116 50 L 138 25 L 158 65 L 178 55 L 200 78 L 222 45 L 246 80 L 270 55 L 296 35 L 320 70 L 346 45 L 372 60 L 400 50 L 400 120 L 0 120 Z")
+                            //- Positive area: sight (lighter sky blue, FRONT layer — smaller peaks)
+                            path.sense-chart__area.sense-chart__area--sight(d="M 0 110 L 18 100 L 36 108 L 56 95 L 76 108 L 96 100 L 116 90 L 138 100 L 160 95 L 182 105 L 204 95 L 226 102 L 248 92 L 270 100 L 294 88 L 318 100 L 342 92 L 366 100 L 400 98 L 400 120 L 0 120 Z")
+                            //- Centerline (white horizontal axis)
+                            line.sense-chart__axis(x1="0" y1="120" x2="400" y2="120")
+                            //- Negative area: smell (medium blue, mirrored downward)
+                            path.sense-chart__area.sense-chart__area--smell(d="M 0 120 L 400 120 L 400 145 L 376 175 L 354 150 L 332 165 L 308 145 L 286 175 L 264 155 L 242 145 L 220 170 L 198 150 L 174 165 L 152 145 L 130 170 L 108 150 L 86 165 L 64 150 L 42 175 L 20 155 L 0 165 Z")
+                        //- Vertical Y-axis line spans the full plot height
+                        span.sense-chart__yaxis(aria-hidden="true")
+                        .sense-chart__times(aria-hidden="true")
+                            span 7am
+                            span 10am
+                            span 1pm
+                            span 4pm
+                            span 7pm
+                    span.sense-chart__axis-label.sense-chart__axis-label--bottom Negative
+
+                //- Color legend (sense color key)
+                ul.sense-key(role="list" aria-label="Sense color key")
+                    li.sense-key__item
+                        span.sense-key__dot(style="background:var(--chart-blue-mid)" aria-hidden="true")
+                        svg.sense-key__icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Hearing")
+                            path(d="M6 9a6 6 0 0 1 12 0c0 3-2 4-3 5.5S13 18 13 19a2 2 0 0 1-4 0")
+                            path(d="M9 9a3 3 0 0 1 6 0")
+                    li.sense-key__item
+                        span.sense-key__dot(style="background:var(--chart-blue-soft)" aria-hidden="true")
+                        svg.sense-key__icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Sight")
+                            path(d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z")
+                            circle(cx="12" cy="12" r="2.6" fill="currentColor" stroke="none")
+                    li.sense-key__item
+                        span.sense-key__dot(style="background:var(--chart-blue-deep)" aria-hidden="true")
+                        svg.sense-key__icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-label="Smell")
+                            //- Stylized nose: bridge curving down to two nostril lobes
+                            path(d="M10 5 C 8 9, 6.5 13, 6 16 C 5.7 18.2, 7.6 19, 9 18 C 9.8 17.4, 10.6 17, 12 17.2 C 13.4 17, 14.2 17.4, 15 18 C 16.4 19, 18.3 18.2, 18 16 C 17.5 13, 16 9, 14 5")
+                            path(d="M10 16.5 q 2 1.5 4 0")
+                    li.sense-key__item
+                        span.sense-key__dot.sense-key__dot--muted(aria-hidden="true")
+                        svg.sense-key__icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-label="Touch")
+                            //- Open palm: 4 fingers + thumb, all extended upward
+                            path(d="M9 11 V4.5 a1.4 1.4 0 0 1 2.8 0 V11")
+                            path(d="M11.8 11 V3.5 a1.4 1.4 0 0 1 2.8 0 V11")
+                            path(d="M14.6 11 V4.5 a1.4 1.4 0 0 1 2.8 0 V12.5")
+                            path(d="M9 11 V8 a1.4 1.4 0 0 0-2.8 0 V14 a6 6 0 0 0 11.2 3 V12.5")
 
         script.
             window.CONFIG = {
                 MAPBOX_KEY: "#{MAPBOX_KEY}"
             }
         script(type="module" src="/js/main.js")
-
+        script(type="module" src="/js/sidebar.js")
+        script(type="module" src="/js/search.js")
+        script(type="module" src="/js/timebar.js")
 

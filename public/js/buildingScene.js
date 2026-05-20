@@ -8,6 +8,7 @@ import { wavesVertexShader } from '../shaders/waves/vertex.js';
 import { wavesFragmentShader } from '../shaders/waves/fragment.js';
 import { smellVertexShader } from '../shaders/smell/vertex.js';
 import { smellFragmentShader } from '../shaders/smell/fragment.js';
+import {MathUtils as currentLookAt} from "three";
 
 //Loaders
 const textureLoader = new THREE.TextureLoader();
@@ -38,6 +39,14 @@ const app = document.getElementById("app");
 const width = app.clientWidth || window.innerWidth;
 const height = app.clientHeight || window.innerHeight;
 
+// Mouse
+const mouse = new THREE.Vector2();
+
+window.addEventListener('mousemove', (event) => {
+    mouse.x = (event.clientX / width) * 2 - 1;
+    mouse.y = - (event.clientY / height) * 2 + 1;
+});
+
 //scene
 const scene = new THREE.Scene();
 
@@ -60,6 +69,31 @@ const renderer = new THREE.WebGLRenderer({
 
 renderer.setSize(sizes.width, sizes.height)
 renderer.setClearColor(0xffffff, 0);
+
+//Audio
+const listener = new THREE.AudioListener();
+camera.add(listener);
+
+const sound = new THREE.Audio(listener);
+const audioLoader = new THREE.AudioLoader();
+
+audioLoader.load('sound/woodshop.mp3', (buffer) => {
+    sound.setBuffer(buffer);
+    sound.setLoop(true);
+    sound.setVolume(0.5);
+});
+
+const caramellSound = new THREE.Audio(listener);
+
+audioLoader.load('sound/Caramell.mp3', (buffer) => {
+    caramellSound.setBuffer(buffer);
+    caramellSound.setLoop(true);
+    caramellSound.setVolume(0.5);
+});
+
+const soundParams = {caramellDanceMode: false}
+
+gui.add(soundParams, 'caramellDanceMode').name('CaramellDansen Mode :3 !!! ')
 
 /**
  * Materials
@@ -100,6 +134,15 @@ swirl.position.x = -1.2
 swirl.position.z = -0.2
 scene.add(swirl)
 
+let smellFolder = gui.addFolder('Smell').close()
+
+smellFolder.addColor({SwirlColor: '#C6BAE6'}, 'SwirlColor').name('Smell Depth Color').onChange((v) => {
+    swirlMaterial.uniforms.uDepthColor.value.set(v);
+})
+smellFolder.addColor({SwirlColor: '#9F92C8'}, 'SwirlColor').name('Smell Surface Color').onChange((v) => {
+    swirlMaterial.uniforms.uSurfaceColor.value.set(v);
+})
+
 //-----------------
 // White MatCap
 //-----------------
@@ -115,6 +158,24 @@ const blueMatCapTexture = textureLoader.load('../textures/matCapDarkBlue.png')
 
 const blueMatCapMaterial = new THREE.MeshMatcapMaterial()
 blueMatCapMaterial.matcap = blueMatCapTexture;
+
+let FoundationUI = gui.addFolder('Foundation').close()
+
+let foundationHue = {
+    hue: 0.5,
+    saturation: 0.5,
+    lightness: 0.5
+}
+
+FoundationUI.add(foundationHue, 'hue').min(0).max(1).step(0.01).name('Wave Hue').onChange(() => {
+    blueMatCapMaterial.color.setHSL(foundationHue.hue, foundationHue.saturation, foundationHue.lightness);
+})
+FoundationUI.add(foundationHue, 'saturation').min(0).max(1).step(0.01).name('Wave Saturation').onChange(() => {
+    blueMatCapMaterial.color.setHSL(foundationHue.hue, foundationHue.saturation, foundationHue.lightness);
+})
+FoundationUI.add(foundationHue, 'lightness').min(0).max(1).step(0.01).name('Wave Lightness').onChange(() => {
+    blueMatCapMaterial.color.setHSL(foundationHue.hue, foundationHue.saturation, foundationHue.lightness);
+})
 
 //-----------------
 // Transparency White Matcap
@@ -217,6 +278,24 @@ atlasMatCapMaterial.onBeforeCompile = (shader) => {
     )
 }
 
+let wallsUI = gui.addFolder('Walls').close()
+
+let wallsHue = {
+    hue: 0.5,
+    saturation: 0.5,
+    lightness: 0.5
+}
+
+wallsUI.add(wallsHue, 'hue').min(0).max(1).step(0.01).name('Wave Hue').onChange(() => {
+    atlasMatCapMaterial.color.setHSL(wallsHue.hue, wallsHue.saturation, wallsHue.lightness);
+})
+wallsUI.add(wallsHue, 'saturation').min(0).max(1).step(0.01).name('Wave Saturation').onChange(() => {
+    atlasMatCapMaterial.color.setHSL(wallsHue.hue, wallsHue.saturation, wallsHue.lightness);
+})
+wallsUI.add(wallsHue, 'lightness').min(0).max(1).step(0.01).name('Wave Lightness').onChange(() => {
+    atlasMatCapMaterial.color.setHSL(wallsHue.hue, wallsHue.saturation, wallsHue.lightness);
+})
+
 //-----------------
 // Waves Blue Matcap
 //-----------------
@@ -229,7 +308,7 @@ const waveCustomUniforms = {
     uTime: new THREE.Uniform(0),
     uBigWavesElevation: new THREE.Uniform(0.12),
     uBigWavesFrequency: new THREE.Uniform(10),
-    uBigWaveSpeed: new THREE.Uniform(3),
+    uBigWaveSpeed: new THREE.Uniform(8),
     uWaveCenter: new THREE.Uniform(new THREE.Vector2(0, 0)),
     uPlaneRadius: new THREE.Uniform(.5),
 };
@@ -277,6 +356,22 @@ const WavesGui = gui.addFolder('Waves').close()
 WavesGui.add(waveCustomUniforms.uBigWavesElevation, 'value').min(0).max(1).step(0.01).name('Wave Elevation')
 WavesGui.add(waveCustomUniforms.uBigWavesFrequency, 'value').min(0).max(10).step(0.01).name('Wave Frequency')
 WavesGui.add(waveCustomUniforms.uBigWaveSpeed, 'value').min(0).max(4).step(0.01).name('Wave Speed')
+
+let wavesHue = {
+    hue: 0.5,
+    saturation: 0.5,
+    lightness: 0.5
+}
+
+WavesGui.add(wavesHue, 'hue').min(0).max(1).step(0.01).name('Wave Hue').onChange(() => {
+    wavesMatCapMaterial.color.setHSL(wavesHue.hue, wavesHue.saturation, wavesHue.lightness);
+})
+WavesGui.add(wavesHue, 'saturation').min(0).max(1).step(0.01).name('Wave Saturation').onChange(() => {
+    wavesMatCapMaterial.color.setHSL(wavesHue.hue, wavesHue.saturation, wavesHue.lightness);
+})
+WavesGui.add(wavesHue, 'lightness').min(0).max(1).step(0.01).name('Wave Lightness').onChange(() => {
+    wavesMatCapMaterial.color.setHSL(wavesHue.hue, wavesHue.saturation, wavesHue.lightness);
+})
 
 //-----------------
 // Benches Matcap
@@ -403,6 +498,135 @@ objLoader.load(
     }
 );
 
+let lectureOne = null;
+debugObject.lectureOneScale = 0.076;
+debugObject.lectureOneY = 2.15;
+debugObject.lectureOneZ = -1.4733;
+debugObject.lectureOneX = -0.34;
+
+//Lecture Hall
+objLoader.load(
+    'models/LectureOne.obj',
+    (object) => {
+        console.log('Lecture loaded successfully', object);
+
+        object.traverse((child) => {
+            if (child.isMesh) {
+                console.log(child.name, !!child.geometry.attributes.uv, child.geometry.attributes.uv);
+                child.material = atlasMatCapMaterial;
+            }
+        });
+        object.position.y = debugObject.lectureOneY
+        object.scale.set(debugObject.lectureOneScale, debugObject.lectureOneScale, debugObject.lectureOneScale);
+        object.position.z = debugObject.lectureOneZ
+        object.position.x = debugObject.lectureOneX
+        object.rotation.y = Math.PI;
+
+        lectureOne = object;
+        //scene.add(object);
+    }
+);
+
+let lectureTwo = null;
+debugObject.lectureTwoScale = 0.07701
+debugObject.lectureTwoY = 2.1887
+debugObject.lectureTwoZ = -1.4733
+debugObject.lectureTwoX = -0.34
+
+//Lecture Hall
+objLoader.load(
+    'models/LectureTwo.obj',
+    (object) => {
+        console.log('Lecture loaded successfully', object);
+
+        object.traverse((child) => {
+            if (child.isMesh) {
+                console.log(child.name, !!child.geometry.attributes.uv, child.geometry.attributes.uv);
+                child.material = atlasMatCapMaterial;
+            }
+        });
+        object.position.y = debugObject.lectureTwoY
+        object.scale.set(debugObject.lectureTwoScale, debugObject.lectureTwoScale, debugObject.lectureTwoScale);
+        object.position.z = debugObject.lectureTwoZ
+        object.position.x = debugObject.lectureTwoX
+        object.rotation.y = Math.PI;
+
+        lectureTwo = object;
+        //scene.add(object);
+    }
+);
+
+let lectureThree = null;
+debugObject.lectureThreeScale = 0.07701
+debugObject.lectureThreeY = 2.1887
+debugObject.lectureThreeZ = -1.4733
+debugObject.lectureThreeX = -0.34
+
+//Lecture Hall
+objLoader.load(
+    'models/LectureThree.obj',
+    (object) => {
+        console.log('Lecture loaded successfully', object);
+
+        object.traverse((child) => {
+            if (child.isMesh) {
+                console.log(child.name, !!child.geometry.attributes.uv, child.geometry.attributes.uv);
+                child.material = atlasMatCapMaterial;
+            }
+        });
+        object.position.y = debugObject.lectureThreeY
+        object.scale.set(debugObject.lectureThreeScale, debugObject.lectureThreeScale, debugObject.lectureThreeScale);
+        object.position.z = debugObject.lectureThreeZ
+        object.position.x = debugObject.lectureThreeX
+        object.rotation.y = Math.PI;
+
+        lectureThree = object;
+        //scene.add(object);
+    }
+);
+
+let BTU = null;
+debugObject.BTUScale = 0.07701
+debugObject.BTUY = 2.1887
+debugObject.BTUZ = -1.4733
+debugObject.BTUX = -0.34
+
+//BTU
+objLoader.load(
+    'models/BTU.obj',
+    (object) => {
+        console.log('Lecture loaded successfully', object);
+
+        object.traverse((child) => {
+            if (child.isMesh) {
+                console.log(child.name, !!child.geometry.attributes.uv, child.geometry.attributes.uv);
+                child.material = atlasMatCapMaterial;
+            }
+        });
+        object.position.y = debugObject.BTUY
+        object.scale.set(debugObject.BTUScale, debugObject.BTUScale, debugObject.BTUScale);
+        object.position.z = debugObject.BTUZ
+        object.position.x = debugObject.BTUX
+        object.rotation.y = Math.PI;
+
+        BTU = object;
+        //scene.add(object);
+    }
+);
+
+// gui.add(debugObject, 'lectureTwoY').min(0).max(5).step(0.0001).name('Lecture Y').onChange(() => {
+//     if(lectureTwo) lectureTwo.position.y = debugObject.lectureTwoY;
+// })
+// gui.add(debugObject, 'lectureTwoScale').min(0.01).max(0.2).step(0.00001).name('Lecture Scale').onChange(() => {
+//     if(lectureTwo) lectureTwo.scale.set(debugObject.lectureTwoScale, debugObject.lectureTwoScale, debugObject.lectureTwoScale);
+// })
+// gui.add(debugObject, 'lectureTwoZ').min(-5).max(5).step(0.0001).name('Lecture Z').onChange(() => {
+//     if(lectureTwo) lectureTwo.position.z = debugObject.lectureTwoZ;
+// })
+// gui.add(debugObject, 'lectureTwoX').min(-5).max(5).step(0.0001).name('Lecture X').onChange(() => {
+//     if(lectureTwo) lectureTwo.position.x = debugObject.lectureTwoX;
+// })
+
 // ---------------------
 // People Instancing
 // ---------------------
@@ -474,8 +698,8 @@ const wavePlaneGeo = new THREE.PlaneGeometry(1,1,254,254)
 const wavePlaneMesh = new THREE.Mesh(wavePlaneGeo, wavesMatCapMaterial)
 wavePlaneMesh.rotation.x = -1.60159265358979
 wavePlaneMesh.position.y = -0.12
-wavePlaneMesh.position.z = -0.799999999999999
-wavePlaneMesh.position.x = 0.100000000000001
+wavePlaneMesh.position.z = 1.23
+wavePlaneMesh.position.x = -0.629999999999999
 
 scene.add(wavePlaneMesh)
 
@@ -503,56 +727,137 @@ circleMesh.position.y = -.35
 
 scene.add(circleMesh)
 
+//Lecture Hall Detect Plane
+const lectureRayPlaneGeo = new THREE.PlaneGeometry(1.3,1.5,2,2)
+const lectureRayPlane = new THREE.Mesh(lectureRayPlaneGeo)
+lectureRayPlane.rotation.x = -1.60159265358979
+lectureRayPlane.position.y = -0.00999999999999979
+lectureRayPlane.position.z = -0.1
+lectureRayPlane.position.x = -1.15
+lectureRayPlane.material.visible = false
+
+scene.add(lectureRayPlane)
+
+//Lecture Hall Detect Plane
+const lectureTwoRayPlaneGeo = new THREE.PlaneGeometry(1,1,2,2)
+const lectureTwoRayPlane = new THREE.Mesh(lectureTwoRayPlaneGeo)
+lectureTwoRayPlane.rotation.x = -1.60159265358979
+lectureTwoRayPlane.position.y = -0.00999999999999979
+lectureTwoRayPlane.position.z = 0.460000000000001
+lectureTwoRayPlane.position.x = -0.00999999999999979
+lectureTwoRayPlane.material.visible = false
+
+scene.add(lectureTwoRayPlane)
+
+//Lecture Hall Detect Plane
+const lectureThreeRayPlaneGeo = new THREE.PlaneGeometry(1,1,2,2)
+const lectureThreeRayPlane = new THREE.Mesh(lectureThreeRayPlaneGeo)
+lectureThreeRayPlane.rotation.x = -1.60159265358979
+lectureThreeRayPlane.position.y = -0.00999999999999979
+lectureThreeRayPlane.position.z = -0.629999999999999
+lectureThreeRayPlane.position.x = -0.00999999999999979
+lectureThreeRayPlane.material.visible = false
+
+scene.add(lectureThreeRayPlane)
+
+//BTUPlane
+const labRayPlaneGeo = new THREE.PlaneGeometry(.8,1.8,2,2)
+const labRayPlane = new THREE.Mesh(labRayPlaneGeo)
+labRayPlane.rotation.x = -1.60159265358979
+labRayPlane.position.y = -0.00999999999999979
+labRayPlane.position.z = -0.32
+labRayPlane.position.x = 1.15
+labRayPlane.material.visible = false
+
+scene.add(labRayPlane)
+
+// gui.add(labRayPlane.position, 'x').min(-10).max(10).step(0.01).name('Lecture RayPlane X');
+// gui.add(labRayPlane.position, 'y').min(-10).max(10).step(0.01).name('Lecture RayPlane Y');
+// gui.add(labRayPlane.position, 'z').min(-10).max(10).step(0.01).name('Lecture RayPlane Z');
+
 //-----------------
 // Controls
 //-----------------
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.enableDamping = true;
 
-// // ---------------------
-// // Camera Intro — GSAP
-// // ---------------------
-// const introStart = { x: -12, y: 5, z: 12 };
-// const introEnd   = { x: -4, y: 1.5, z: 4 };
-//
-// const lookTarget = new THREE.Vector3(0, 3, 0);
-//
-// camera.position.set(introStart.x, introStart.y, introStart.z);
-// camera.lookAt(lookTarget);
-// controls.enabled = false;
-//
-// const tl = gsap.timeline({
-//     onUpdate: () => {
-//         camera.lookAt(lookTarget);
-//     },
-//     onComplete: () => {
-//         controls.enabled = true;
-//         controls.target.set(0, 0, 0);
-//         controls.update();
-//     }
-// });
-//
-// // Camera swoops in
-// tl.to(camera.position, {
-//     x: introEnd.x,
-//     y: introEnd.y,
-//     z: introEnd.z,
-//     duration: 2.5,
-//     ease: 'power3.out',
-// }, 0);
-//
-// // LookAt drifts down simultaneously
-// tl.to(lookTarget, {
-//     y: 0,
-//     duration: 2.5,
-//     ease: 'power2.out',
-// }, 0);
+//---------------------
+//AI Slop
+//---------------------
+const POOL_SIZE = 60;
+const MATERIALS = ['♩','♪','♫','♬'].flatMap(char =>
+    ['#7F77DD','#1D9E75','#D85A30','#D4537E'].map(color => {
+        const cv = Object.assign(document.createElement('canvas'), { width: 128, height: 128 });
+        const c = cv.getContext('2d');
+        Object.assign(c, { font: 'bold 90px serif', textAlign: 'center', textBaseline: 'middle', fillStyle: color });
+        c.fillText(char, 64, 64);
+        return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false });
+    })
+);
+
+const pool = Array.from({ length: POOL_SIZE }, () => {
+    const s = new THREE.Sprite(MATERIALS[0]);
+    s.visible = false;
+    scene.add(s);
+    return { s, life: 0, maxLife: 0, vx: 0, vy: 0, vz: 0, w: 0, ws: 0 };
+});
+
+function spawnNote(pos) {
+    const p = pool.find(p => !p.s.visible);
+    if (!p) return;
+    p.s.material = MATERIALS[Math.floor(Math.random() * MATERIALS.length)];
+    p.s.material.opacity = 1;
+    p.s.scale.setScalar(0.08 + Math.random() * 0.1);
+    p.s.position.set(pos.x + (Math.random() - .5) * .1, pos.y, pos.z + (Math.random() - .5) * .1);
+    p.s.visible = true;
+    Object.assign(p, { life: 0, maxLife: 30 + Math.random() * 40, vx: (Math.random() - .5) * .001, vy: .0003 + Math.random() * .0002, vz: (Math.random() - .5) * .001, w: Math.random() * Math.PI * 2, ws: .05 + Math.random() * .05 });
+}
+
+function updateNoteParticles() {
+    for (const p of pool) {
+        if (!p.s.visible) continue;
+        p.life++; p.w += p.ws;
+        p.s.position.x += p.vx + Math.sin(p.w) * .003;
+        p.s.position.y += p.vy;
+        p.s.position.z += p.vz;
+        p.s.material.opacity = Math.max(0, 1 - (p.life / p.maxLife) ** 1.5);
+        if (p.life >= p.maxLife) p.s.visible = false;
+    }
+}
 
 // ---------------------------------
 // Animation loop
 // ---------------------------------
 const clock = new THREE.Clock();
+const raycaster = new THREE.Raycaster();
 
+const objectsToTest = [lectureRayPlane, lectureTwoRayPlane, lectureThreeRayPlane];
+
+let lecturePairs = null;
+let cameraTarget = null;
+
+var isLookingAtLecture = false;
+
+//  click
+// window.addEventListener('click', () => {
+//     raycaster.setFromCamera(mouse, camera);
+//
+//     for (const {plane, model} of lecturePairs) {
+//         if (raycaster.intersectObject(plane).length > 0) {
+//             cameraTarget = {
+//                 position: new THREE.Vector3(model.position.x, 7, model.position.z),  // overhead position
+//                 lookAt: new THREE.Vector3(model.position.x, 0, model.position.z)      // point to look at
+//             };
+//             isLookingAtLecture = true;
+//             customUniforms.uCutDepth.value = 0;
+//             break;
+//         }
+//     }
+//
+//     console.log(isLookingAtLecture)
+// });
+
+let lastNoteTime = 0;
 
 function animate() {
     const elapsedTime = clock.getElapsedTime();
@@ -561,12 +866,68 @@ function animate() {
     waveCustomUniforms.uTime.value = elapsedTime
     swirlMaterial.uniforms.uTime.value = elapsedTime;
 
+    updateNoteParticles();
+
+    // ---------------------------------
+    // Raycast
+    // ---------------------------------
+
+    raycaster.setFromCamera(mouse, camera)
+
+    if(lectureOne && lectureTwo && lectureThree) {
+        if (lecturePairs == null){
+            lecturePairs = [
+                {plane: lectureRayPlane, model: lectureOne, restY: debugObject.lectureOneY},
+                {plane: lectureTwoRayPlane, model: lectureTwo, restY: debugObject.lectureTwoY},
+                {plane: lectureThreeRayPlane, model: lectureThree, restY: debugObject.lectureThreeY},
+                {plane: labRayPlane, model: BTU, restY: debugObject.BTUY}
+            ];
+        }
+
+        const hoverY = 2.7;
+
+        for (const { plane, model, restY } of lecturePairs) {
+            const intersections = raycaster.intersectObject(plane);
+            const isHovered = intersections.length > 0;
+            const targetY = isHovered ? hoverY : restY;
+
+            model.position.y += (targetY - model.position.y) * 0.1;
+        }
+    }
+    const intersection = raycaster.intersectObject(labRayPlane);
+    const isHovered = intersection.length > 0;
+
+    //Sound
+    if(soundParams.caramellDanceMode) {
+        if (isHovered && !caramellSound.isPlaying) caramellSound.play();
+        if (!isHovered && caramellSound.isPlaying) caramellSound.stop();
+    }else{
+        if (isHovered && !sound.isPlaying) sound.play();
+        if (!isHovered && sound.isPlaying) sound.stop();
+    }
+
+    const noteSpawnPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // Y=0
+    const mouseWorld = new THREE.Vector3();
+
+    if ((soundParams.caramellDanceMode) && elapsedTime - lastNoteTime > 0.2) {
+        raycaster.setFromCamera(mouse, camera);
+        raycaster.ray.intersectPlane(noteSpawnPlane, mouseWorld);
+        lastNoteTime = elapsedTime;
+        spawnNote(mouseWorld);
+    }
+
+    if (cameraTarget && isLookingAtLecture) {
+        camera.position.lerp(cameraTarget.position, 0.05);
+        currentLookAt.lerp(cameraTarget.lookAt, 0.05);
+        camera.lookAt(currentLookAt);
+    }
+
+
     requestAnimationFrame(animate);
     controls.update();
 
     renderer.render( scene, camera );
 } animate()
-
 
 const GUITick = () => {
     if(AtlasModel){
@@ -586,3 +947,9 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
 });
+
+document.addEventListener('click', () => {
+    if (listener.context.state === 'suspended') {
+        listener.context.resume();
+    }
+}, { once: true });

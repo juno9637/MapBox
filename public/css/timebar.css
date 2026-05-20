@@ -1,0 +1,167 @@
+/* =========================================================
+   Time scrubber bar
+   - Visual structure mirrors building.pug's time slider:
+       row of hour labels  →  pill slider  →  white readout chip
+   - Colors come from the sidebar.css design tokens
+     (--panel-bg, --ink, --ink-muted, --soft-shadow, --panel-ease, ...)
+     so it sits inside the same warm-putty/sage/charcoal palette.
+   - Slides up from the bottom when data-state="open".
+   ========================================================= */
+
+.timebar {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 20;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--ink);
+
+    /* Off-screen by default; slides in on data-state="open" */
+    transform: translateX(-50%) translateY(140%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+            transform var(--panel-duration) var(--panel-ease),
+            opacity   220ms ease-out;
+}
+
+.timebar[data-state="open"] {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ---------- Hour labels ---------- */
+
+.timebar__labels {
+    display: flex;
+    justify-content: space-between;
+    width: 360px;
+    padding: 0 2px;
+    margin-bottom: 6px;
+}
+
+.timebar__labels span {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    width: 0;                 /* zero-width so spans act as tick points */
+    text-align: center;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+/* ---------- Slider track ---------- */
+
+.timebar__slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 360px;
+    height: 6px;
+    border-radius: 3px;
+
+    background: var(--panel-bg);
+    box-shadow: var(--soft-shadow);
+
+    outline: none;
+    cursor: pointer;
+}
+
+/* ---------- Slider thumb (WebKit + Blink) ---------- */
+
+.timebar__slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+
+    background: #fff;
+    border: 2px solid var(--ink-soft);
+    box-shadow: var(--soft-shadow);
+
+    cursor: grab;
+    transition: transform 100ms var(--panel-ease),
+    box-shadow 140ms var(--panel-ease);
+}
+
+.timebar__slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: var(--soft-shadow-l);
+}
+
+.timebar__slider::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+}
+
+/* ---------- Slider thumb (Firefox) ---------- */
+
+.timebar__slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+
+    background: #fff;
+    border: 2px solid var(--ink-soft);
+    box-shadow: var(--soft-shadow);
+
+    cursor: grab;
+    transition: transform 100ms var(--panel-ease),
+    box-shadow 140ms var(--panel-ease);
+}
+
+.timebar__slider::-moz-range-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: var(--soft-shadow-l);
+}
+
+.timebar__slider:focus-visible {
+    outline: 2px solid rgba(61, 69, 64, 0.5);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+/* ---------- Readout chip ---------- */
+
+.timebar__readout {
+    margin-top: 8px;
+    padding: 4px 12px;
+
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+
+    background: var(--panel-bg);
+    border-radius: 8px;
+    box-shadow: var(--soft-shadow);
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .timebar {
+        transition: opacity 200ms ease-out;
+        transform: translateX(-50%) translateY(0);
+    }
+    .timebar:not([data-state="open"]) {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+/* ---------- Narrow viewports ---------- */
+
+@media (max-width: 640px) {
+    .timebar__labels,
+    .timebar__slider {
+        width: min(82vw, 360px);
+    }
+}
