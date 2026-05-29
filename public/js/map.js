@@ -529,6 +529,11 @@ function buildGui() {
     colorFolder.close()
 
     smellFolder = gui.addFolder('Smell');
+
+    if (threeCustomLayer.smellMaterial) {
+        smellFolder.addColor(threeCustomLayer.smellMaterial.uniforms.uDepthColor, 'value').name('Shadow Color');
+        smellFolder.addColor(threeCustomLayer.smellMaterial.uniforms.uSurfaceColor, 'value').name('Highlight Color');
+    }
 }
 //endregion
 
@@ -868,9 +873,6 @@ const threeCustomLayer = {
         swirl.scale.set(30, 30, 30);
         swirl.position.y = 0.5;  // float just above ground to avoid z-fighting// animated/displaced verts may escape the bbox
         this.scene.add(swirl);
-
-        smellFolder.addColor(this.smellMaterial.uniforms.uDepthColor, 'value').name('Shadow Color');
-        smellFolder.addColor(this.smellMaterial.uniforms.uSurfaceColor, 'value').name('Highlight Color');
     },
 
     _buildWindow: function () {
@@ -1010,8 +1012,6 @@ const threeCustomLayer = {
 //endregion
 
 map.on("load", () => {
-
-    buildGui()
 
     document.dispatchEvent(new CustomEvent("timebar:open"));
 
@@ -1180,7 +1180,7 @@ document.addEventListener("timebar:change", (e) => {
         if (segmentPositionController) segmentPositionController.updateDisplay();
     }
 
-    if(value >= 0.5){
+    if(value >= 0.5 && value <= 0.9){
         SetRain(true)
     }
     else{
